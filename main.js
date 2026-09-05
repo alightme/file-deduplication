@@ -35,17 +35,18 @@ function createWindow() {
  * 启动后端程序并等待执行完成。
  * 入参：folderPath —— 传递给后端的文件夹路径。
  * 处理步骤：
- * 1. 以 folderPath 为命令行参数异步启动 backend.exe（隐藏控制台窗口，超时 5 分钟）；
+ * 1. 以 folderPath 为命令行参数异步启动 backend.exe（隐藏控制台窗口，超时 5 分钟、输出缓冲 100 MB）；
  * 2. 解析后端 stdout 的 JSON 消息，校验 msgType=10000 后取出 data 字段。
  * 返回值：Promise —— 成功解析为重复分组二维数组（每组为重复文件对象列表），失败则 reject。
  */
 function runBackend(folderPath) {
   return new Promise((resolve, reject) => {
-    // 扫描大目录耗时可能较长，超时放宽至 5 分钟。
-    execFile(backendPath, [folderPath], { timeout: 300000, windowsHide: true }, (error, stdout, stderr) => {
+    // 扫描大目录耗时可能较长，超时放宽至 5 分钟；扫描结果 JSON 可能较大，stdout 缓冲上限放宽至 100 MB。
+    execFile(backendPath, [folderPath], { timeout: 300000, windowsHide: true, maxBuffer: 100 * 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) {
-        const detail = stderr ? `：${stderr.trim()}` : '';
-        reject(new Error(`后端执行失败${detail}`));
+        // stderr 有内容时优先展示后端原因；为空（如输出超限、超时被杀）时回退到 error.message，便于定位问题。
+        const detail = stderr ? `：${stderr.trim()}` : (error.message || '');
+        reject(new Error(`后端执行失败${detail ? '：' + detail : ''}`));
         return;
       }
       const raw = stdout.trim();
