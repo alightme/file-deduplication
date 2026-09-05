@@ -1,0 +1,13 @@
+{
+  "name": "file-deduplication",
+  "version": "0.1.0",
+  "description": "Electron file deduplication app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^37.2.0"
+  }
+}
