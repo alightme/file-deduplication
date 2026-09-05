@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>文件去重</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: system-ui, 'Microsoft YaHei', sans-serif;
+      }
+      /* 文件夹操作栏：路径输入框与按钮横向排列 */
+      .folder-bar {
+        display: flex;
+        gap: 8px;
+        max-width: 640px;
+      }
+      #folderPath {
+        flex: 1;
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      /* 通用按钮样式 */
+      .btn {
+        padding: 6px 14px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #chooseFolderBtn {
+        background: #2d8cf0;
+        color: #fff;
+      }
+      #scanBtn {
+        background: #19be6b;
+        color: #fff;
+      }
+      /* 删除按钮：红色警示，禁用时半透明 */
+      .btn-danger {
+        background: #ed4014;
+        color: #fff;
+      }
+      .btn-danger:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      /* 状态提示区 */
+      #status {
+        margin-top: 12px;
+        min-height: 18px;
+        color: #333;
+      }
+      /* 结果区默认隐藏，扫描成功后展示 */
+      .hidden {
+        display: none;
+      }
+      #resultWrap {
+        margin-top: 12px;
+      }
+      /* 结果区操作栏：统计文案在左、删除按钮在右 */
+      .result-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      /* 统计文案 */
+      #summary {
+        margin: 0;
+        color: #666;
+      }
+      /* 表格滚动容器：路径过长时横向滚动，纵向限高 */
+      .table-scroll {
+        overflow: auto;
+        max-height: 60vh;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      /* 结果表格 */
+      #resultTable {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+      }
+      #resultTable th,
+      #resultTable td {
+        border: 1px solid #e0e0e0;
+        padding: 6px 10px;
+        text-align: left;
+        white-space: nowrap;
+      }
+      #resultTable th {
+        background: #f5f7fa;
+        position: sticky;
+        top: 0;
+      }
+      /* 组号列居中、文件名与大小列限宽 */
+      #resultTable .col-group {
+        text-align: center;
+        width: 70px;
+        color: #666;
+      }
+      /* 保留勾选列：窄列居中 */
+      #resultTable .col-check {
+        width: 48px;
+        text-align: center;
+      }
+      #resultTable .col-name {
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #resultTable .col-size {
+        width: 110px;
+        text-align: right;
+      }
+      /* 文件名与路径列可点击：悬停高亮提示 */
+      #resultTable td.col-name,
+      #resultTable td.col-path {
+        cursor: pointer;
+      }
+      #resultTable td.col-name:hover,
+      #resultTable td.col-path:hover {
+        color: #2d8cf0;
+        text-decoration: underline;
+      }
+      /* 交替底色区分相邻重复组 */
+      #resultTable tbody tr.group-alt {
+        background: #fafbfc;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>文件去重</h1>
+    <!-- 文件夹选择栏：展示已选路径，点击输入框或按钮均可弹出系统文件夹选择对话框 -->
+    <div class="folder-bar">
+      <input id="folderPath" type="text" placeholder="请选择文件夹" readonly />
+      <button id="chooseFolderBtn" class="btn" type="button">选择文件夹</button>
+      <button id="scanBtn" class="btn" type="button">扫描</button>
+    </div>
+    <!-- 状态提示：扫描中/错误/无重复等文案 -->
+    <p id="status"></p>
+    <!-- 扫描结果：勾选保留文件后，把其余重复文件移入回收站 -->
+    <div id="resultWrap" class="hidden">
+      <div class="result-bar">
+        <p id="summary"></p>
+        <button id="deleteBtn" class="btn btn-danger" type="button" disabled>删除未勾选文件</button>
+      </div>
+      <div class="table-scroll">
+        <table id="resultTable">
+          <thead>
+            <tr>
+              <th class="col-check">保留</th>
+              <th class="col-group">重复组</th>
+              <th>文件名</th>
+              <th>文件大小</th>
+              <th>文件路径</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
