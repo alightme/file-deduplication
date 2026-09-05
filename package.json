@@ -6,7 +6,8 @@
   "scripts": {
     "build:backend": "node build-backend.js",
     "prestart": "npm run build:backend",
-    "start": "electron ."
+    "start": "electron .",
+    "package:win": "node package-win.js"
   },
   "license": "MIT",
   "devDependencies": {
