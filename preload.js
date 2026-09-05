@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('fileAPI', {
   /**
    * 请求主进程调用后端程序扫描文件夹。
    * 入参：folderPath —— 待扫描的文件夹绝对路径。
-   * 返回值：Promise，解析为 { ok, text }。
+   * 返回值：Promise，解析为 { ok: true, groups: 重复分组二维数组 } 或 { ok: false, text: 错误说明 }。
    */
   scanFolder: (folderPath) => ipcRenderer.invoke('scan-folder', folderPath)
 });

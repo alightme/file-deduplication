@@ -29,13 +29,14 @@ function createWindow() {
  * 启动后端程序并等待执行完成。
  * 入参：folderPath —— 传递给后端的文件夹路径。
  * 处理步骤：
- * 1. 以 folderPath 为命令行参数异步启动 backend.exe（隐藏控制台窗口，超时 30 秒）；
- * 2. 解析后端 stdout 的 JSON 消息，校验 msgType=10000 后取出 data 文案。
- * 返回值：Promise —— 成功解析为 data 文案（如 hello <文件夹路径>），失败则 reject。
+ * 1. 以 folderPath 为命令行参数异步启动 backend.exe（隐藏控制台窗口，超时 5 分钟）；
+ * 2. 解析后端 stdout 的 JSON 消息，校验 msgType=10000 后取出 data 字段。
+ * 返回值：Promise —— 成功解析为重复分组二维数组（每组为重复文件对象列表），失败则 reject。
  */
 function runBackend(folderPath) {
   return new Promise((resolve, reject) => {
-    execFile(backendPath, [folderPath], { timeout: 30000, windowsHide: true }, (error, stdout, stderr) => {
+    // 扫描大目录耗时可能较长，超时放宽至 5 分钟。
+    execFile(backendPath, [folderPath], { timeout: 300000, windowsHide: true }, (error, stdout, stderr) => {
       if (error) {
         const detail = stderr ? `：${stderr.trim()}` : '';
         reject(new Error(`后端执行失败${detail}`));
@@ -79,7 +80,7 @@ ipcMain.handle('select-folder', async () => {
  * 1. 校验路径有效且为已存在的目录；
  * 2. 校验后端程序存在，缺失时返回构建提示；
  * 3. 调用 runBackend 启动后端并等待输出。
- * 返回值：{ ok: true, text: 输出文案 } 或 { ok: false, text: 错误说明 }。
+ * 返回值：{ ok: true, groups: 重复分组二维数组 } 或 { ok: false, text: 错误说明 }。
  */
 ipcMain.handle('scan-folder', async (event, folderPath) => {
   try {
@@ -87,10 +88,10 @@ ipcMain.handle('scan-folder', async (event, folderPath) => {
       return { ok: false, text: '文件夹路径无效或不存在' };
     }
     if (!fs.existsSync(backendPath)) {
-      return { ok: false, text: '未找到后端程序，请先在 go 目录执行：go build -o backend.exe main.go' };
+      return { ok: false, text: '未找到后端程序，请先执行：npm run build:backend' };
     }
-    const text = await runBackend(folderPath);
-    return { ok: true, text };
+    const groups = await runBackend(folderPath);
+    return { ok: true, groups };
   } catch (err) {
     return { ok: false, text: err.message || String(err) };
   }

@@ -37,11 +37,67 @@
         background: #19be6b;
         color: #fff;
       }
-      /* 扫描结果展示区 */
-      #scanResult {
+      /* 状态提示区 */
+      #status {
         margin-top: 12px;
         min-height: 18px;
         color: #333;
+      }
+      /* 结果区默认隐藏，扫描成功后展示 */
+      .hidden {
+        display: none;
+      }
+      #resultWrap {
+        margin-top: 12px;
+      }
+      /* 统计文案 */
+      #summary {
+        margin: 0 0 8px;
+        color: #666;
+      }
+      /* 表格滚动容器：路径过长时横向滚动，纵向限高 */
+      .table-scroll {
+        overflow: auto;
+        max-height: 60vh;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      /* 结果表格 */
+      #resultTable {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+      }
+      #resultTable th,
+      #resultTable td {
+        border: 1px solid #e0e0e0;
+        padding: 6px 10px;
+        text-align: left;
+        white-space: nowrap;
+      }
+      #resultTable th {
+        background: #f5f7fa;
+        position: sticky;
+        top: 0;
+      }
+      /* 组号列居中、文件名与大小列限宽 */
+      #resultTable .col-group {
+        text-align: center;
+        width: 70px;
+        color: #666;
+      }
+      #resultTable .col-name {
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #resultTable .col-size {
+        width: 110px;
+        text-align: right;
+      }
+      /* 交替底色区分相邻重复组 */
+      #resultTable tbody tr.group-alt {
+        background: #fafbfc;
       }
     </style>
   </head>
@@ -53,8 +109,25 @@
       <button id="chooseFolderBtn" class="btn" type="button">选择文件夹</button>
       <button id="scanBtn" class="btn" type="button">扫描</button>
     </div>
-    <!-- 扫描结果：展示后端程序返回的文案 -->
-    <p id="scanResult"></p>
+    <!-- 状态提示：扫描中/错误/无重复等文案 -->
+    <p id="status"></p>
+    <!-- 扫描结果：表格展示后端返回的重复文件分组 -->
+    <div id="resultWrap" class="hidden">
+      <p id="summary"></p>
+      <div class="table-scroll">
+        <table id="resultTable">
+          <thead>
+            <tr>
+              <th>重复组</th>
+              <th>文件名</th>
+              <th>文件大小</th>
+              <th>文件路径</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </div>
     <script src="renderer.js"></script>
   </body>
 </html>
