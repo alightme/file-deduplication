@@ -9,11 +9,11 @@
         padding: 20px;
         font-family: system-ui, 'Microsoft YaHei', sans-serif;
       }
-      /* 文件夹选择栏：路径输入框与按钮横向排列 */
+      /* 文件夹操作栏：路径输入框与按钮横向排列 */
       .folder-bar {
         display: flex;
         gap: 8px;
-        max-width: 560px;
+        max-width: 640px;
       }
       #folderPath {
         flex: 1;
@@ -22,13 +22,26 @@
         border-radius: 4px;
         cursor: pointer;
       }
-      #chooseFolderBtn {
+      /* 通用按钮样式 */
+      .btn {
         padding: 6px 14px;
         border: none;
         border-radius: 4px;
+        cursor: pointer;
+      }
+      #chooseFolderBtn {
         background: #2d8cf0;
         color: #fff;
-        cursor: pointer;
+      }
+      #scanBtn {
+        background: #19be6b;
+        color: #fff;
+      }
+      /* 扫描结果展示区 */
+      #scanResult {
+        margin-top: 12px;
+        min-height: 18px;
+        color: #333;
       }
     </style>
   </head>
@@ -37,8 +50,11 @@
     <!-- 文件夹选择栏：展示已选路径，点击输入框或按钮均可弹出系统文件夹选择对话框 -->
     <div class="folder-bar">
       <input id="folderPath" type="text" placeholder="请选择文件夹" readonly />
-      <button id="chooseFolderBtn" type="button">选择文件夹</button>
+      <button id="chooseFolderBtn" class="btn" type="button">选择文件夹</button>
+      <button id="scanBtn" class="btn" type="button">扫描</button>
     </div>
+    <!-- 扫描结果：展示后端程序返回的文案 -->
+    <p id="scanResult"></p>
     <script src="renderer.js"></script>
   </body>
 </html>

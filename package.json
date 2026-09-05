@@ -4,6 +4,8 @@
   "description": "Electron file deduplication app",
   "main": "main.js",
   "scripts": {
+    "build:backend": "node build-backend.js",
+    "prestart": "npm run build:backend",
     "start": "electron ."
   },
   "license": "MIT",
