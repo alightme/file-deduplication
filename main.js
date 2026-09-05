@@ -30,8 +30,8 @@ function createWindow() {
  * 入参：folderPath —— 传递给后端的文件夹路径。
  * 处理步骤：
  * 1. 以 folderPath 为命令行参数异步启动 backend.exe（隐藏控制台窗口，超时 30 秒）；
- * 2. 通过回调判断执行结果：出错（含非 0 退出码）则 reject，成功则收集 stdout。
- * 返回值：Promise —— 成功解析为后端 stdout 文案（已去首尾空白），失败则 reject。
+ * 2. 解析后端 stdout 的 JSON 消息，校验 msgType=10000 后取出 data 文案。
+ * 返回值：Promise —— 成功解析为 data 文案（如 hello <文件夹路径>），失败则 reject。
  */
 function runBackend(folderPath) {
   return new Promise((resolve, reject) => {
@@ -41,7 +41,17 @@ function runBackend(folderPath) {
         reject(new Error(`后端执行失败${detail}`));
         return;
       }
-      resolve(stdout.trim());
+      const raw = stdout.trim();
+      try {
+        const message = JSON.parse(raw);
+        if (message.msgType !== 10000) {
+          reject(new Error(`后端返回未知消息类型：${message.msgType}`));
+          return;
+        }
+        resolve(message.data);
+      } catch (parseErr) {
+        reject(new Error(`后端返回内容不是合法 JSON：${raw}`));
+      }
     });
   });
 }
