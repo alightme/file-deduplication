@@ -16,9 +16,12 @@ let lastScannedFolder = null;
  * 2. 加载 index.html 作为窗口内容。
  */
 function createWindow() {
+  // 应用图标路径：开发环境为项目根目录 build/icon.ico，打包后随资源复制到应用目录内相同相对位置。
+  const iconPath = path.join(__dirname, 'build', 'icon.ico');
   const win = new BrowserWindow({
     width: 800,
     height: 600,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true
