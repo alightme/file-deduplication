@@ -102,7 +102,7 @@
         width: 70px;
         color: #666;
       }
-      /* 保留勾选列：窄列居中 */
+      /* 删除勾选列：窄列居中 */
       #resultTable .col-check {
         width: 48px;
         text-align: center;
@@ -142,17 +142,17 @@
     </div>
     <!-- 状态提示：扫描中/错误/无重复等文案 -->
     <p id="status"></p>
-    <!-- 扫描结果：勾选保留文件后，把其余重复文件移入回收站 -->
+    <!-- 扫描结果：勾选待删除文件，点击删除按钮批量移入回收站 -->
     <div id="resultWrap" class="hidden">
       <div class="result-bar">
         <p id="summary"></p>
-        <button id="deleteBtn" class="btn btn-danger" type="button" disabled>删除未勾选文件</button>
+        <button id="deleteCheckedBtn" class="btn btn-danger" type="button" disabled>删除勾选文件</button>
       </div>
       <div class="table-scroll">
         <table id="resultTable">
           <thead>
             <tr>
-              <th class="col-check">保留</th>
+              <th class="col-check">删除</th>
               <th class="col-group">重复组</th>
               <th>文件名</th>
               <th>文件大小</th>

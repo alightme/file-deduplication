@@ -1,5 +1,5 @@
 // 渲染进程逻辑：实现文件夹选择栏、扫描按钮交互、重复文件表格展示、
-// 勾选保留文件、删除未勾选文件（删除后表格保持原样，便于用户按路径核对删除结果）。
+// 勾选待删除文件、删除勾选文件（删除后表格保持原样，便于用户按路径核对删除结果）。
 
 const folderPathInput = document.getElementById('folderPath');
 const chooseFolderBtn = document.getElementById('chooseFolderBtn');
@@ -7,7 +7,7 @@ const scanBtn = document.getElementById('scanBtn');
 const statusEl = document.getElementById('status');
 const resultWrap = document.getElementById('resultWrap');
 const summaryEl = document.getElementById('summary');
-const deleteBtn = document.getElementById('deleteBtn');
+const deleteCheckedBtn = document.getElementById('deleteCheckedBtn');
 const resultBody = document.getElementById('resultBody');
 
 // 已成功移入回收站的文件路径集合：表格保持原样展示，再次点击删除时跳过这些文件，避免重复提交。
@@ -52,7 +52,7 @@ async function scanFolder() {
 }
 
 /**
- * 将重复分组渲染为带“保留”勾选列的扁平化表格。
+ * 将重复分组渲染为带“删除”勾选列的扁平化表格。
  * 入参：groups —— 重复分组二维数组，每行是一组重复文件（文件对象含 fileName/fileSize/filePath）。
  * 执行流程：
  * 1. 无重复分组时提示“未发现重复文件”并隐藏结果区；
@@ -68,7 +68,7 @@ function renderGroups(groups) {
   if (!groups || groups.length === 0) {
     statusEl.textContent = '未发现重复文件';
     resultWrap.classList.add('hidden');
-    deleteBtn.disabled = true;
+    deleteCheckedBtn.disabled = true;
     return;
   }
   // 统计重复组数与涉及文件总数。
@@ -84,12 +84,12 @@ function renderGroups(groups) {
       if (groupIndex % 2 === 1) {
         row.classList.add('group-alt');
       }
-      // 保留勾选列：勾选表示该文件要保留，未勾选的文件可被“删除未勾选文件”移入回收站（默认不勾选）。
+      // 删除勾选列：勾选表示该文件待删除（移入回收站），默认不勾选；每组建议至少保留一个文件不勾选。
       const checkCell = document.createElement('td');
       checkCell.className = 'col-check';
       const check = document.createElement('input');
       check.type = 'checkbox';
-      check.className = 'keep-check';
+      check.className = 'delete-check';
       checkCell.appendChild(check);
       row.appendChild(checkCell);
       // 组号列：仅组内首个文件输出，并通过 rowspan 合并该组所有行。
@@ -120,23 +120,23 @@ function renderGroups(groups) {
       resultBody.appendChild(row);
     });
   });
-  deleteBtn.disabled = false;
+  deleteCheckedBtn.disabled = false;
   statusEl.textContent = '';
   resultWrap.classList.remove('hidden');
 }
 
 /**
- * 将未勾选“保留”的文件批量移入回收站（表格保持原样，不做增删改）。
+ * 将勾选“删除”的文件批量移入回收站（表格保持原样，不做增删改）。
  * 执行流程：
- * 1. 收集表格中尚未删除且未勾选保留的文件路径，同时统计“整组未勾选”的组数；
- * 2. 无待删除文件时提示并返回；否则弹出二次确认（整组清空时额外提醒）；
+ * 1. 收集表格中已勾选且尚未删除的文件路径，同时统计“整组全勾选”的组数；
+ * 2. 无待删除文件时提示并返回；否则弹出二次确认（整组全删时额外提醒）；
  * 3. 调用 fileAPI.deleteFiles(paths) 交给主进程移入回收站；
  * 4. 成功后把成功删除的路径记入 deletedPaths，避免再次点击时重复提交；
  * 5. 状态区汇总成功数与失败明细（失败文件仍保留未删除状态，可重试）。
  * 返回值：无（直接操作 DOM）。
  */
-async function deleteUnchecked() {
-  const unchecked = [];
+async function deleteChecked() {
+  const checkedPaths = [];
   const groupStateMap = new Map();
   resultBody.querySelectorAll('tr').forEach((row) => {
     // 已成功删除的文件跳过：不参与统计，也不重复提交。
@@ -145,42 +145,45 @@ async function deleteUnchecked() {
     }
     const groupIndex = Number(row.dataset.group);
     if (!groupStateMap.has(groupIndex)) {
-      groupStateMap.set(groupIndex, { hasChecked: false });
+      groupStateMap.set(groupIndex, { total: 0, checked: 0 });
     }
-    const check = row.querySelector('.keep-check');
+    const state = groupStateMap.get(groupIndex);
+    state.total += 1;
+    const check = row.querySelector('.delete-check');
     if (check && check.checked) {
-      groupStateMap.get(groupIndex).hasChecked = true;
-    } else {
-      unchecked.push(row.dataset.path);
+      state.checked += 1;
+      checkedPaths.push(row.dataset.path);
     }
   });
-  if (unchecked.length === 0) {
-    statusEl.textContent = '没有未勾选的文件需要删除';
+  if (checkedPaths.length === 0) {
+    statusEl.textContent = '没有勾选的文件需要删除';
     return;
   }
-  // 统计“整组未勾选任何保留文件”的组数，用于删除前二次确认提示。
+  // 统计“整组文件全部勾选删除”的组数，用于删除前二次确认提示：每组至少保留一个文件。
   let emptyGroupCount = 0;
   groupStateMap.forEach((state) => {
-    if (!state.hasChecked) emptyGroupCount += 1;
+    if (state.total > 0 && state.checked === state.total) {
+      emptyGroupCount += 1;
+    }
   });
-  let confirmText = `确定将 ${unchecked.length} 个未勾选文件移入回收站吗？`;
+  let confirmText = `确定将 ${checkedPaths.length} 个勾选文件移入回收站吗？`;
   if (emptyGroupCount > 0) {
-    confirmText += `\n其中 ${emptyGroupCount} 组未勾选任何保留文件，整组文件都会被移入回收站。`;
+    confirmText += `\n其中 ${emptyGroupCount} 组已勾选全部文件，删除后该组将不再保留任何文件。`;
   }
   if (!window.confirm(confirmText)) {
     return;
   }
-  deleteBtn.disabled = true;
+  deleteCheckedBtn.disabled = true;
   statusEl.textContent = '正在移入回收站…';
-  const result = await window.fileAPI.deleteFiles(unchecked);
+  const result = await window.fileAPI.deleteFiles(checkedPaths);
   if (!result.ok) {
-    deleteBtn.disabled = false;
+    deleteCheckedBtn.disabled = false;
     statusEl.textContent = '删除失败：' + result.text;
     return;
   }
-  // 失败文件的路径集合（未删除成功，可重试）；其余未勾选文件视为已成功移入回收站。
+  // 失败文件的路径集合（未删除成功，可重试）；其余勾选文件视为已成功移入回收站。
   const failedPaths = new Set((result.failed || []).map((item) => item.path));
-  unchecked.forEach((p) => {
+  checkedPaths.forEach((p) => {
     if (!failedPaths.has(p)) {
       deletedPaths.add(p);
     }
@@ -247,8 +250,8 @@ chooseFolderBtn.addEventListener('click', chooseFolder);
 folderPathInput.addEventListener('click', chooseFolder);
 // 点击扫描按钮触发后端扫描。
 scanBtn.addEventListener('click', scanFolder);
-// 点击删除按钮，把未勾选保留的文件移入回收站。
-deleteBtn.addEventListener('click', deleteUnchecked);
+// 点击删除按钮，把勾选待删除的文件移入回收站。
+deleteCheckedBtn.addEventListener('click', deleteChecked);
 // 表格点击委托：文件名打开文件、文件路径在资源管理器中定位。
 resultBody.addEventListener('click', (event) => {
   const cell = event.target.closest('td');

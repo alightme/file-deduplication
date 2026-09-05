@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('fileAPI', {
    */
   scanFolder: (folderPath) => ipcRenderer.invoke('scan-folder', folderPath),
   /**
-   * 请求主进程把未勾选保留的文件批量移入系统回收站。
+   * 请求主进程把待删除的文件批量移入系统回收站。
    * 入参：paths —— 需要删除的文件绝对路径数组。
    * 返回值：Promise，解析为 { ok: true, deleted: 成功数量, failed: [{ path, reason }] } 或 { ok: false, text: 错误说明 }。
    */
