@@ -5,7 +5,7 @@
 // 2. 清空并重建输出目录 dist/file-deduplication-win32-x64，整体复制 Electron 运行时；
 // 3. 将 electron.exe 重命名为 file-deduplication.exe（Electron 按相对路径定位 resources，改名不影响运行）；
 // 4. 移除 resources/default_app.asar（示例应用，应用目录存在时不会被加载，移除可减小体积）；
-// 5. 在 resources/app 下写入应用文件：入口、页面与后端程序 bin/backend.exe；
+// 5. 在 resources/app 下写入应用文件：入口、页面、图标 build/icon.ico 与后端程序 bin/backend.exe；
 //    —— 应用不压缩为 asar，main.js 中 __dirname 指向 resources/app，后端路径 __dirname/bin/backend.exe 无需改动即可生效；
 // 6. 打印产物路径，供用户直接双击运行或分发。
 const path = require('path');
@@ -24,7 +24,7 @@ const appName = 'file-deduplication';
 const outDir = path.join(rootDir, 'dist', `${appName}-win32-x64`);
 
 // 需要随应用一起分发的运行时文件（均为运行必需文件，与仓库源码对应）。
-const appFiles = ['package.json', 'main.js', 'preload.js', 'renderer.js', 'index.html'];
+const appFiles = ['package.json', 'main.js', 'preload.js', 'renderer.js', 'index.html', 'build/icon.ico'];
 
 // 后端程序在应用内的相对路径：resources/app/bin/backend.exe，与 main.js 的后端定位逻辑 __dirname/bin 对应。
 const backendRel = path.join('bin', 'backend.exe');
@@ -90,7 +90,12 @@ function assemble() {
   // 写入应用目录 resources/app：应用文件不压缩进 asar，便于后端 exe 直接执行。
   const appDir = path.join(outDir, 'resources', 'app');
   fs.mkdirSync(appDir, { recursive: true });
-  appFiles.forEach((file) => fs.copyFileSync(path.join(rootDir, file), path.join(appDir, file)));
+  appFiles.forEach((file) => {
+    // 逐个复制应用文件：支持子目录（如 build/icon.ico），先确保目标父目录存在。
+    const dest = path.join(appDir, file);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(path.join(rootDir, file), dest);
+  });
 
   // 复制后端程序到 resources/app/bin/backend.exe。
   fs.mkdirSync(path.join(appDir, 'bin'), { recursive: true });
